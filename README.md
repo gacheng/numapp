@@ -27,13 +27,13 @@ Application can be configured through app.properties for the following parameter
 
 ###File Structure
 src: main source code directory
-#####server:  contains the files related to server
+#####Server:  contains the files related to server
 - **ServerStarter.java**:    a wrapper file start the server
 - **TcpServer.java**:        an actual file contains all server's execution logics
 - **ListeningThread.java**:  an object to process incoming client message
 - **PersistThread.java**:    an object to process and persist the client message to disk file
 - **MergeToFileProcessor.java**:  an object to extract file name value from disk and append to the output file
-#####client:  contains the files related to client
+#####Client:  contains the files related to client
 - **TcpClient.java**:          an object to represent client message sender
 - **TcpClientSimulator.java**: an object to simulate client, either enter number through console or have number randomly generated
  
