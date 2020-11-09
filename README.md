@@ -1,5 +1,6 @@
 
 ##Architecture
+
 ###Resilience of Data Loss
 The application is resilient to data loss. Beside using the Java's BlockingQueue as messaging mechanism to persist the data from client. A second backup server is designed and is running as a separate process on different port. This backup server could be run in a separate machine to further reduce the single-point failure. The backup server does not do any particular processing, just record all the user inputs into log file "raw.log", which contains the 9-digit number and its received timestamp
 
