@@ -1,13 +1,4 @@
 
-##Application is coded base on the following assumptions
-1. Once the maximum of 5 clients has accessed the tcpServer, the new clients will be waiting for connecting to the server instead of being rejected
-2. Once the number is sent from client, an acknowldege message will be sent from server to client
-3. The output file "collect.log" is holding all the unique numbers. This file is not on rolling base, and currently no need to set upper limit file size
-4. When server is shutdown, all clients will be closed itself too
-5. The application is running on the single machine rather than in a distributed environment
-6. No backend database server is available
-7. No messaging or streaming server is available
-
 ##Architecture
 ###Resilience of Data Loss
 The application is resilient to data loss. Beside using the Java's BlockingQueue as messaging mechanism to persist the data from client. A second backup server is designed and is running as a separate process on different port. This backup server could be run in a separate machine to further reduce the single-point failure. The backup server does not do any particular processing, just record all the user inputs into log file "raw.log", which contains the 9-digit number and its received timestamp
@@ -52,6 +43,15 @@ Client sends a PNG to the server at a certain interval to check if the Server is
 - In command line, run "gradle test --tests com.relic.numapp.TcpClientTest.testFunctionality" to have a general test
 - In command line, run "java -jar client.jar" to start a manual client console, which you can input your numbers
 - Check the output/collect.log to get the run result
+
+##Application is coded base on the following assumptions
+1. Once the maximum of 5 clients has accessed the tcpServer, the new clients will be waiting for connecting to the server instead of being rejected
+2. Once the number is sent from client, an acknowldege message will be sent from server to client
+3. The output file "collect.log" is holding all the unique numbers. This file is not on rolling base, and currently no need to set upper limit file size
+4. When server is shutdown, all clients will be closed itself too
+5. The application is running on the single machine rather than in a distributed environment
+6. No backend database server is available
+7. No messaging or streaming server is available
 
 ##TODO
 1. Make output file "collect.log" is on rolling base when certain file size limit is reached
