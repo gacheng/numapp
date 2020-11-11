@@ -21,6 +21,7 @@ Application can be configured through app.properties for the following parameter
 7. backup output filename
 
 ###File Structure
+
 src: main source code directory
 #####Server:  contains the files related to server
 - **ServerStarter.java**:    a wrapper file to start the application server
