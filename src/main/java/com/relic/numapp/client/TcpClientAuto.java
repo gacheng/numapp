@@ -24,14 +24,12 @@ public class TcpClientAuto {
         Scanner scanner = new Scanner(System.in);
 
         TcpClient tcpClient = new TcpClient();
-        new Thread(()-> {
-            tcpClient.start(hostname, port);
-        }).start();
-
         for(int i=0; i<100; i++) {
             String userInput = getNextNumber();
             tcpClient.getUserInputs().add(userInput);
         }
+        tcpClient.getUserInputs().add(Constants.stop.name());
+        tcpClient.start(hostname, port);
     }
 
 

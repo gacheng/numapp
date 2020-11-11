@@ -47,11 +47,16 @@ public class TcpClient {
             }).start();
 
             String userInput;
-            while ( (userInput = userInputs.take()) != null && !stopFlag ) {
+            while ( !stopFlag && (userInput = userInputs.take()) != null ) {
                 //if ( logger.isDebugEnabled() ) {
                     logger.info("You input is: " + userInput);
                 //}
-
+                if ( userInput.equalsIgnoreCase(Constants.stop.name()) ) {
+                    logger.info("TcpClient be stopped");
+                    //exit gracefully
+                    socket.close();
+                    return;
+                }
                 if ( !validateUserInput(userInput) ) {
                     logger.error("Invalid input: [" + userInput + "]. Closing the socket");
                     socket.close();
@@ -60,6 +65,7 @@ public class TcpClient {
 
                 if (socket.isClosed()) {
                     logger.error("Socket is closed. Exit client app");
+                    socket.close();
                     System.exit(2);
                 }
 
@@ -67,14 +73,14 @@ public class TcpClient {
                 if ( userInput.equalsIgnoreCase(Constants.terminate.name()) ) {
                     logger.info("TcpClient closing...");
                     //exit gracefully
-                    System.exit(0);
+                    socket.close();
+                    return;
                 }
 
                 String fromServer = reader.readLine();
                 //if ( logger.isDebugEnabled() ) {
                     logger.info("from server: " + fromServer);
                 //}
-                userInput = userInputs.take();
                 try {
                     Thread.sleep(100);
                 } catch (InterruptedException e) {
