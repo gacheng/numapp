@@ -24,7 +24,7 @@ public class TcpClientAuto {
                 num = ONE_MILLION * Integer.parseInt(str);
             } catch (NumberFormatException fe) { }
         }
-        testLoadTemplate(7, num);
+        testLoadTemplate(5, num);
     }
 
     public static void run100() {
