@@ -1,49 +1,64 @@
 package com.relic.numapp.client;
 
 import com.relic.numapp.utils.Constants;
+import com.relic.numapp.utils.RandomNumber;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
-import java.util.Random;
-import java.util.Scanner;
 
 /**
  * A simulator to run TcpClient automatically
  */
 public class TcpClientAuto {
     final static Log logger = LogFactory.getLog(TcpClientAuto.class);
+    final static int ONE_K = 1000;
+    final static int ONE_MILLION = 1000000;
+    static String hostname = "localhost";
+    static int port = 4000;
 
     public static void main(String[] args) {
-       runIt();
+        int num = ONE_K;
+
+        if ( args.length > 0 ) {
+            String str = args[0];
+            try {
+                num = ONE_MILLION * Integer.parseInt(str);
+            } catch (NumberFormatException fe) { }
+        }
+        testLoadTemplate(7, num);
     }
 
-    public static void runIt() {
-        String hostname = "localhost";
-        int port = 4000;
-        String type = Constants.automatic.name();
-        Scanner scanner = new Scanner(System.in);
-
+    public static void run100() {
         TcpClient tcpClient = new TcpClient();
-        for(int i=0; i<100; i++) {
-            String userInput = getNextNumber();
+        for(int i=0; i<101; i++) {
+            String userInput = RandomNumber.getNextNumber();
             tcpClient.getUserInputs().add(userInput);
         }
         tcpClient.getUserInputs().add(Constants.stop.name());
-        tcpClient.start(hostname, port);
+        new Thread(()->{
+            tcpClient.start(hostname, port);
+        }).start();
     }
 
-
-    /**
-     * Helper method to get next number, if it is automatic type, it is generated from random number,
-     * otherwse, it is input from system console
-     *
-     * @return
-     */
-    private static String getNextNumber() {
-        Random rnd = new Random();
-        int number = rnd.nextInt(999999999);
-        return String.format("%09d", number);
+    static void testLoadTemplate(int threadNum, int totalNumbers) {
+        TcpClient[] clients = new TcpClient[threadNum];
+        long beg = System.currentTimeMillis();
+        for ( int i=0; i<threadNum; i++) {
+            clients[i] = new TcpClient();
+            for (int j = 0; j < totalNumbers/threadNum; j++) {
+                String userInput = RandomNumber.getNextNumber();
+                clients[i].getUserInputs().add(userInput);
+            }
+            clients[i].getUserInputs().add(Constants.stop.name());
+        }
+        for ( int i=0; i<threadNum; i++) {
+            final int ii = i;
+            Thread t = new Thread(() -> {
+                clients[ii].start(hostname, port);
+            });
+            t.start();
+        }
+        long end = System.currentTimeMillis();
+        System.out.println("time spent for " + totalNumbers + " numbers: " + (end - beg) / 1000.0);
     }
-
 
 }

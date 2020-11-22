@@ -33,4 +33,37 @@ dependencies {
 application {
     // Define the main class for the application.
     mainClassName = 'com.relic.numapp.server.ServerStarter'
+
+    version = '1.0'
+    sourceCompatibility = 1.8
+    targetCompatibility = 1.8
+}
+
+jar {
+    manifest {
+        attributes 'Main-Class': 'com.relic.numapp.client.TcpClientManual'
+    }
+
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}
+
+task(startServer, dependsOn: 'classes', type: JavaExec) {
+    main = 'com.relic.numapp.server.ServerStarter'
+    classpath = sourceSets.main.runtimeClasspath
+}
+
+task(clientAuto, dependsOn: 'classes', type: JavaExec) {
+    main = 'com.relic.numapp.client.TcpClientAuto'
+    classpath = sourceSets.main.runtimeClasspath
+}
+
+task fatJar(type: Jar) {
+    manifest {
+        attributes 'Main-Class': 'com.relic.numapp.client.TcpClientManual'
+    }
+    baseName = project.name + '-all'
+    from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
+    with jar
 }

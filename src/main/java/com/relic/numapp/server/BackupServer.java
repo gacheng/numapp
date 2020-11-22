@@ -1,26 +1,17 @@
 package com.relic.numapp.server;
 
-import com.relic.numapp.server.service.ListeningThread;
-import com.relic.numapp.server.service.MergeToFileProcessor;
-import com.relic.numapp.server.service.PersistThread;
-import com.relic.numapp.utils.Constants;
-import org.apache.commons.io.FileUtils;
+import com.relic.numapp.server.service.BackupThread;
+import com.relic.numapp.utils.FileUtil;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.*;
 
 /**
- * A backbone class that represents the server.  It listening for client connection request and then spin out a
- * separate thread for each client
+ * A server/process to backup all data accepted by the front server
  */
 public class BackupServer {
 
@@ -30,25 +21,46 @@ public class BackupServer {
     private String outputFile;
 
     public static int port = 4001; //default
-    public static int maxPersistThread = 2;
-    private BlockingQueue<String> blockingQueue = new LinkedBlockingDeque<String>();
+    public static int maxClientThread = 5; //default
+    private static FileWriter bkupFileWriter;
+    private static boolean stopFlag;
 
     public BackupServer() {
-        outDirectory = ServerStarter.appProperties.getProperty("output_directory");
-        outputFile = ServerStarter.appProperties.getProperty("output_file_bkup");
-        if (  ServerStarter.appProperties.getProperty("listening_port_bkup") != null ) {
-            port = Integer.parseInt(ServerStarter.appProperties.getProperty("listening_port_bkup"));
+        FileUtil.loadProperties();
+        if (  FileUtil.appProperties.getProperty("listening_port_bkup") != null ) {
+            port = Integer.parseInt(FileUtil.appProperties.getProperty("listening_port_bkup"));
+        }
+        if (  FileUtil.appProperties.getProperty("max_client_threads") != null ) {
+            maxClientThread = Integer.parseInt(FileUtil.appProperties.getProperty("max_client_threads"));
+        }
+
+        outDirectory = FileUtil.appProperties.getProperty("output_directory");
+        outputFile = FileUtil.appProperties.getProperty("output_file_bkup");
+        FileUtil.createOutputDirectory(outDirectory);
+        String fullFileName = outDirectory + "/" + outputFile;
+        try {
+            File file = new File(fullFileName);
+            bkupFileWriter = new FileWriter(file, true);
+        } catch (IOException e) {
+            logger.error("failed to create the output file for backup: " + fullFileName);
         }
     }
 
     public void start() {
         /***********************************************************************************************************
-         * Start thread for persisting data to file directory, read from BlockingQueue
+         * Start a thread for flush out to the backup file every 10 seconds
          ***********************************************************************************************************/
-        ExecutorService persistExecutor = Executors.newFixedThreadPool(maxPersistThread);
-        for (int i=0; i<maxPersistThread; i++) {
-            persistExecutor.execute(new PersistThread(blockingQueue, outDirectory));
-        }
+        new Thread(()->{
+            while ( !stopFlag ) {
+                try {
+                    Thread.sleep(runInterval);
+                    bkupFileWriter.flush();
+                    System.out.println("BackServer running...");
+                } catch (InterruptedException | IOException e) {
+                    logger.error("caught when flushing to backup file:", e);
+                }
+            }
+        }).start();
 
         /***********************************************************************************************************
          * Start the server listening socket and accept message from client, each client is in its own thread
@@ -56,12 +68,39 @@ public class BackupServer {
          ***********************************************************************************************************/
         try (ServerSocket serverSocket = new ServerSocket(port)) {
             logger.info("BackupServer is listening on port " + port);
-            ExecutorService threadExecutor = Executors.newSingleThreadExecutor();
-            Socket socket = serverSocket.accept();
-            threadExecutor.execute(new ListeningThread("Thread-Backup", socket, blockingQueue));
+            ExecutorService threadExecutor = Executors.newFixedThreadPool((int) (maxClientThread*1.5));
+
+            int sequence = 0;
+            while (!stopFlag) {
+                Socket socket = serverSocket.accept();
+                sequence++;
+                threadExecutor.execute(new BackupThread("Thread-Backup-"+sequence, socket, bkupFileWriter));
+            }
+
         } catch (IOException ex) {
             logger.error("BackupServer exception: ",  ex);
         }
     }
 
+    /**
+     * This method is to shutdown the application gracefully by checking the server
+     */
+    public static void shutdown() {
+        stopFlag = true;
+        try {
+            bkupFileWriter.close();
+            System.exit(0);
+        } catch (IOException e) {
+            logger.error("caught", e);
+        }
+    }
+
+    /**
+     * For start up backserver in separately in different machine
+     * @param args
+     */
+    public static void  main(String... args) {
+        BackupServer backupServer = new BackupServer();
+        backupServer.start();
+    }
 }

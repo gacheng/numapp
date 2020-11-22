@@ -3,41 +3,21 @@
  */
 package com.relic.numapp.server;
 
+import com.relic.numapp.utils.FileUtil;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Properties;
 
 /**
  * A wrapper class to start the server.  It first loads the properties and then start the server
  */
 public class ServerStarter {
-    private final static Log logger = LogFactory.getLog(ServerStarter.class);
-
-    private final static String PROP_FILE_NAME = "app.properties";
-    public static Properties appProperties = new Properties();
 
     public static void main(String[] args) {
         System.out.println("ServerStarter Started");
-        loadProperties();
+        FileUtil.loadProperties();
         TcpServer tcpServer = new TcpServer();
         tcpServer.start();
     }
 
-    public static void loadProperties() {
-        try (InputStream input = ServerStarter.class.getClassLoader().getResourceAsStream(PROP_FILE_NAME)) {
-            if (input == null) {
-                logger.error("Sorry, unable to find " + PROP_FILE_NAME);
-                return;
-            }
-            // load a properties file
-            appProperties.load(input);
-
-        } catch (IOException ex) {
-            ex.printStackTrace();
-        }
-    }
 
 }

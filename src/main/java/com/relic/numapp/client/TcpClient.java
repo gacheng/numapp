@@ -30,18 +30,20 @@ public class TcpClient {
         ) {
             //start a new thread to check if the socket to server is alive, if not, closing this client
             new Thread(()->{
+                String tname = Thread.currentThread().getName();
                 while ( !stopFlag ) {
                     try {
                         writer.println("PNG");
                         if ( writer.checkError() ) {
-                            logger.info("Socket no longer reachable, possibly the server is shutdown");
+                            logger.info(tname + ": Socket can't be reached, possibly the server is shutdown. ");
+                            stopFlag = true;
                             System.exit(0);
                         }
                         Thread.sleep(30000);  //every minute
-                        logger.info("BlockingQueue size: " + userInputs.size());
+                        logger.info(tname + ": Client blockingQueue size: " + userInputs.size());
                     }
                     catch (InterruptedException ite) {
-                        logger.error("caught", ite);
+                        logger.error(tname + " caught", ite);
                     }
                 }
             }).start();
@@ -49,18 +51,13 @@ public class TcpClient {
             String userInput;
             while ( !stopFlag && (userInput = userInputs.take()) != null ) {
                 //if ( logger.isDebugEnabled() ) {
-                    logger.info("You input is: " + userInput);
+                //    logger.info("You input is: " + userInput);
                 //}
                 if ( userInput.equalsIgnoreCase(Constants.stop.name()) ) {
                     logger.info("TcpClient be stopped");
                     //exit gracefully
                     socket.close();
                     return;
-                }
-                if ( !validateUserInput(userInput) ) {
-                    logger.error("Invalid input: [" + userInput + "]. Closing the socket");
-                    socket.close();
-                    System.exit(1);
                 }
 
                 if (socket.isClosed()) {
@@ -79,13 +76,8 @@ public class TcpClient {
 
                 String fromServer = reader.readLine();
                 //if ( logger.isDebugEnabled() ) {
-                    logger.info("from server: " + fromServer);
+                //    logger.info("from server: " + fromServer);
                 //}
-                try {
-                    Thread.sleep(100);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
             }
 
         } catch (UnknownHostException uex) {
